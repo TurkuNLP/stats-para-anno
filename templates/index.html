@@ -51,19 +51,24 @@
       </div>
 
       <h2>Agreement</h2>
+      <div class="row">
 
-      Human versus Merged:
+	Agreement versus the merged data. Normlab is all the different labels. Coarselab is the coarse labels of 4, 4*, 4A, 4A*, 3, 2, 1, x where A is any arrow and * is any number of extra fluff.
+
+      </div>
 
       <div class="row">
 	<div class="col-8">
 	  {{a_stats|safe}}
 	</div>
       </div>
-      {% for m in a_matrices %}
+      {% for u,matrices in a_matrices.items() %}
       <div class="row">
-	<div class=="col-12">
-	  <img src="{{m}}" width="500"/>
+	{% for m in matrices %}
+	<div class="col-4">
+	  <img src="{{m}}" width="100%"/>
 	</div>
+	{% endfor %}
       </div>
       {% endfor %}
 	
