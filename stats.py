@@ -24,7 +24,9 @@ import io
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 APP_ROOT = os.environ.get('PARA_STATS_APP_ROOT',"")
+REW_DATADIR= os.environ.get('PARA_STATS_REW_DATADIR',"")
 app.config["APPLICATION_ROOT"] = APP_ROOT
+
 
 sanitize_re=re.compile(r"[^a-zäöåA-ZÄÖÅ0-9 ]")
 whitespace_re=re.compile(r"\s+")
@@ -137,7 +139,7 @@ def agreement_timeline(batchdict,merged):
 
 @app.route('/')
 def idxpage():
-    batchdict=read_rew_batches("/home/ginter/rew-data")
+    batchdict=read_rew_batches(REW_DATADIR)
     del batchdict["JennaK"]
     merged=batchdict["Merged"]
     del batchdict["Merged"]
