@@ -184,10 +184,13 @@ def idxpage():
     agg_stats=agg_df.groupby(["user","week"]).mean()
     agg_stats_html=(agg_stats*100).to_html(classes=["table","table-sm","table-hover"],float_format=lambda x:"{x:2.03}".format(x=x))
 
-    labels=["4","4A","4*","4A*","3","2"]
-    matrices=[]
+    labels=["4","4A","4*","4A*","3","2","1"]
+    matrices={}
+    last_3weeks=list(ok_weeks)[-3:]
     for user_w,rows in agg_df.groupby(["user","week"]).groups.items():
         user,w=user_w
+        if w not in last_3weeks:
+            continue
         dataf=agg_df.loc[list(rows),:]
         ytrue=list(dataf["g_coarselab"])
         yuser=(dataf["coarselab"])
@@ -198,7 +201,7 @@ def idxpage():
         dat=io.BytesIO()
         plt.savefig(dat)
         plt.close()
-        matrices.append("data:image/png;base64,"+base64.b64encode(dat.getvalue()).decode('utf8'))
+        matrices.setdefault(user,[]).append("data:image/png;base64,"+base64.b64encode(dat.getvalue()).decode('utf8'))
     
     return render_template("index.html",weektot=weektot_str,bcounts=basic_counts_html,ccounts=coarse_counts,rewtot=rew_grand_total,rewtot_rew=rew_rew_grand_total,unique_cls=unique_cls,unique_cls34=unique_cls34,unique_cls_rew=unique_rew,coeff=coeff,a_stats=agg_stats_html,a_matrices=matrices)
     
