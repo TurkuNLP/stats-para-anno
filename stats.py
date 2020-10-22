@@ -17,9 +17,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sklearn.metrics
-
+import time
 import base64
 import io
+from functools import lru_cache
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -137,6 +138,13 @@ def agreement_timeline(batchdict,merged):
 
 @app.route('/')
 def idxpage():
+    ttl_hash=round(time.time() / 60) #expires every 60 seconds
+    return idxpage_real(ttl_hash)
+
+#https://stackoverflow.com/questions/31771286/python-in-memory-cache-with-time-to-live
+@lru_cache()
+def idxpage_real(ttl_hash=None):
+    del ttl_hash
     batchdict=read_rew_batches("/home/ginter/rew-data")
     del batchdict["JennaK"]
     merged=batchdict["Merged"]
