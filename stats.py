@@ -21,6 +21,7 @@ import time
 import base64
 import io
 from functools import lru_cache
+import time
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -36,10 +37,12 @@ def sanitize(txt):
     txt_clean=whitespace_re.sub(" ",txt_clean) #replace all whitespace with a single space
     return txt_clean.strip().lower() #strip and lowercase
 
-
+batchdict={}
+loadtimes={}
 def read_rew_batches(datadir):
-    batchdict={} #user -> batchfile -> Batch
-    batchfiles=sorted(glob.glob(datadir+"/batches-*/*.json")+glob.glob(datadir+"/batches-*/*/*.json"))
+    global batchdict #user -> batchfile -> Batch
+    global loadtimes
+    batchfiles=sorted(glob.glob(datadir+"/batches-*/*.json")+glob.glob(datadir+"/batches-*/archived/*.json"))
     for b in batchfiles:
         components=b.split("/")
         fname=components[-1]
@@ -48,9 +51,23 @@ def read_rew_batches(datadir):
         else:
             assert "batches-" in components[-3]
             user=components[-3].replace("batches-","")
+        #Is this batch in the dict already?
+        if b in loadtimes and user in batchdict and fname in batchdict[user]:
+            #Now I should check the mod time
+            time_modified=os.path.getmtime(b)
+            time_loaded=loadtimes[b]
+            if time_modified<time_loaded:
+                continue
         with open(b) as f:
-            batchdict.setdefault(user,{})[fname]=json.load(f)
-    return batchdict
+            data=json.load(f)
+            loadtimes[b]=time.time()
+            for item in data:
+                if "document_context1" in item:
+                    del item["document_context1"]
+                if "document_context2" in item:
+                    del item["document_context2"]
+            batchdict.setdefault(user,{})[fname]=data
+
 
 def timeline(rew_batches):
     for user,batches in rew_batches.items():
@@ -90,8 +107,10 @@ def unique_examples(batchdict):
 def day(timestamp):
     return (timestamp.year,timestamp.month,timestamp.day)
 
-def week(timestamp):
-    return timestamp.isocalendar()[1]
+def week(timestamp,begin_year=2020):
+    #I would need these to work over years I am afraid
+    offset=int((timestamp.year-begin_year)*53)
+    return timestamp.isocalendar()[1]+offset
     
 def normlabel(l):
     l=l.strip()
@@ -143,12 +162,16 @@ def idxpage():
     ttl_hash=round(time.time() / 60) #expires every 60 seconds
     return idxpage_real(ttl_hash)
 
+
+
 #https://stackoverflow.com/questions/31771286/python-in-memory-cache-with-time-to-live
 @lru_cache()
 def idxpage_real(ttl_hash=None):
     del ttl_hash
-    batchdict=read_rew_batches(REW_DATADIR)
-    del batchdict["JennaK"]
+    global batchdict
+    print("Read start",flush=True)
+    read_rew_batches(REW_DATADIR)
+    print("Read end",flush=True)
     merged=batchdict["Merged"]
     del batchdict["Merged"]
     
